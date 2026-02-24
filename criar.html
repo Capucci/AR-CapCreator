@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Criar Projeto AR - CapCreator</title>
+  
+  <!-- A-Frame para preview 3D -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -12,464 +17,637 @@
       min-height: 100vh;
       padding: 20px;
     }
+    
     .container {
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
+    }
+    
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    /* Grid de 2 colunas */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    /* Coluna da esquerda - Uploads */
+    .left-panel {
       background: white;
       border-radius: 20px;
       padding: 30px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    h1 {
-      color: #333;
-      margin-bottom: 10px;
-      text-align: center;
+    
+    /* Coluna da direita - Editor 3D */
+    .right-panel {
+      background: #16213e;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      color: white;
     }
-    .subtitle {
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
+    
+    /* Área de preview 3D */
+    .preview-3d {
+      width: 100%;
+      height: 300px;
+      background: #0f3460;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
     }
+    
+    #preview-scene {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Upload areas */
     .upload-area {
       border: 2px dashed #ddd;
       border-radius: 10px;
-      padding: 30px 20px;
+      padding: 20px;
       margin-bottom: 20px;
       text-align: center;
       transition: all 0.3s;
       cursor: pointer;
     }
+    
     .upload-area:hover {
       border-color: #667eea;
       background: #f8f9ff;
     }
+    
     .upload-area.has-file {
       border-color: #28a745;
       background: #f0fff0;
     }
+    
     .upload-icon {
-      font-size: 48px;
+      font-size: 32px;
       margin-bottom: 10px;
     }
-    .upload-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .upload-subtitle {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
+    
     .file-info {
       margin-top: 10px;
-      padding: 10px;
+      padding: 8px;
       background: #f8f9fa;
       border-radius: 5px;
-      font-size: 14px;
+      font-size: 12px;
+      word-break: break-all;
     }
+    
     input[type="file"] {
       display: none;
     }
-    .form-group {
-      margin-bottom: 20px;
+    
+    /* Sliders de controle */
+    .control-group {
+      background: #0f3460;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
     }
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      color: #333;
-      font-weight: bold;
-    }
-    .form-group input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
+    
+    .control-group h3 {
+      color: #e94560;
+      margin-bottom: 15px;
       font-size: 16px;
     }
-    .btn {
+    
+    .slider-item {
+      margin-bottom: 15px;
+    }
+    
+    .slider-item label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      color: #aaa;
+      font-size: 12px;
+    }
+    
+    .slider-item input[type=range] {
+      width: 100%;
+      margin: 5px 0;
+    }
+    
+    .valor {
+      color: #e94560;
+      font-weight: bold;
+    }
+    
+    /* Botões */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    
+    button {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    
+    button:hover {
+      background: #ff6b8b;
+      transform: translateY(-2px);
+    }
+    
+    button.secondary {
+      background: #0f3460;
+    }
+    
+    button.secondary:hover {
+      background: #1a4a8b;
+    }
+    
+    .btn-primary {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      padding: 15px 30px;
+      padding: 15px;
       border-radius: 10px;
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
       width: 100%;
-      transition: transform 0.3s;
+      margin-top: 20px;
     }
-    .btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    
+    /* Código gerado */
+    .code-box {
+      background: #0a0a1a;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #e94560;
+      margin: 15px 0;
+      word-break: break-all;
     }
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .btn-secondary {
-      background: #6c757d;
-      margin-top: 10px;
-    }
-    .btn-success {
-      background: #28a745;
-    }
+    
+    /* Preview do projeto criado */
     .preview {
       margin-top: 30px;
       padding: 30px;
-      background: #f8f9fa;
+      background: white;
       border-radius: 10px;
       display: none;
-      border: 2px solid #28a745;
     }
+    
     .preview.show {
       display: block;
-      animation: fadeIn 0.5s;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .progress {
-      margin-top: 20px;
-      height: 4px;
-      background: #f0f0f0;
-      border-radius: 2px;
-      overflow: hidden;
-      display: none;
-    }
-    .progress.show {
-      display: block;
-    }
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #667eea, #764ba2);
-      width: 0%;
-      transition: width 0.3s;
-    }
-    .status {
-      text-align: center;
-      margin-top: 10px;
-      color: #666;
-    }
+    
     .qr-code {
       text-align: center;
       margin: 20px 0;
     }
-    .qr-code img {
-      max-width: 200px;
-      border: 1px solid #ddd;
-      padding: 10px;
-      background: white;
-    }
+    
     .project-url {
-      background: white;
+      background: #f8f9fa;
       padding: 15px;
       border-radius: 5px;
-      border: 1px solid #ddd;
       word-break: break-all;
       margin: 20px 0;
-      font-size: 14px;
     }
-    .action-buttons {
+    
+    /* Loading */
+    .loading {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+    }
+    
+    .loading.show {
       display: flex;
-      gap: 10px;
-      margin-top: 20px;
     }
-    .action-buttons .btn {
-      flex: 1;
-      margin: 0;
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #e94560;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
     }
-    .warning {
-      background: #fff3cd;
-      color: #856404;
-      padding: 10px;
-      border-radius: 5px;
-      margin-top: 10px;
-      font-size: 14px;
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Responsivo */
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div id="loadingMessage">Processando...</div>
+  </div>
+
   <div class="container">
-    <h1>🎯 Criar Novo Projeto AR</h1>
-    <div class="subtitle">Faça upload dos arquivos para criar sua experiência</div>
-
-    <div class="form-group">
-      <label for="projectName">📝 Nome do Projeto</label>
-      <input type="text" id="projectName" placeholder="Ex: Meu Primeiro AR" value="Meu Projeto AR">
+    <h1>🎯 AR CapCreator - Criar Projeto</h1>
+    
+    <div class="grid">
+      <!-- COLUNA ESQUERDA - UPLOADS -->
+      <div class="left-panel">
+        <h2 style="margin-bottom: 20px; color: #333;">1. Faça upload dos arquivos</h2>
+        
+        <!-- Upload Target .mind -->
+        <div class="upload-area" id="targetArea" onclick="document.getElementById('targetFile').click()">
+          <div class="upload-icon">🎯</div>
+          <div style="font-weight: bold;">Target (.mind)</div>
+          <div style="font-size: 12px; color: #666; margin: 5px 0;">Clique para selecionar</div>
+          <input type="file" id="targetFile" accept=".mind" style="display: none;">
+          <div class="file-info" id="targetInfo">Nenhum arquivo selecionado</div>
+        </div>
+        
+        <!-- Upload Modelo 3D -->
+        <div class="upload-area" id="modeloArea" onclick="document.getElementById('modeloFile').click()">
+          <div class="upload-icon">📦</div>
+          <div style="font-weight: bold;">Modelo 3D (.glb)</div>
+          <div style="font-size: 12px; color: #666; margin: 5px 0;">Clique para selecionar</div>
+          <input type="file" id="modeloFile" accept=".glb,.gltf" style="display: none;">
+          <div class="file-info" id="modeloInfo">Nenhum arquivo selecionado</div>
+        </div>
+        
+        <!-- Upload Áudio -->
+        <div class="upload-area" id="audioArea" onclick="document.getElementById('audioFile').click()">
+          <div class="upload-icon">🎵</div>
+          <div style="font-weight: bold;">Áudio (.mp3)</div>
+          <div style="font-size: 12px; color: #666; margin: 5px 0;">Clique para selecionar</div>
+          <input type="file" id="audioFile" accept=".mp3,.wav" style="display: none;">
+          <div class="file-info" id="audioInfo">Nenhum arquivo selecionado</div>
+        </div>
+        
+        <!-- Nome do projeto -->
+        <div style="margin-top: 20px;">
+          <label style="font-weight: bold; color: #333;">📝 Nome do Projeto</label>
+          <input type="text" id="projectName" value="Meu Projeto AR" style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+      </div>
+      
+      <!-- COLUNA DIREITA - EDITOR 3D -->
+      <div class="right-panel">
+        <h2 style="margin-bottom: 20px;">2. Ajuste o modelo 3D</h2>
+        
+        <!-- Preview 3D -->
+        <div class="preview-3d">
+          <a-scene id="preview-scene" embedded vr-mode-ui="enabled: false" background="color: #0f3460">
+            <a-camera position="0 1.6 4" look-controls="enabled: true" wasd-controls="enabled: false"></a-camera>
+            <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
+            <a-light type="directional" color="#ffffff" intensity="1" position="1 2 1"></a-light>
+            
+            <!-- Grid de referência -->
+            <a-grid position="0 0 0" rotation="-90 0 0" width="10" height="10" color="#444"></a-grid>
+            
+            <!-- Modelo 3D Preview -->
+            <a-entity
+              id="modelo-preview"
+              gltf-model="https://capucci.github.io/AR-CapCreator/assets/modelo.glb"
+              animation-mixer
+              scale="2 2 2"
+              position="0 0.5 0"
+              rotation="-90 0 0">
+            </a-entity>
+          </a-scene>
+        </div>
+        
+        <!-- Controles -->
+        <div class="control-group">
+          <h3>📏 ESCALA</h3>
+          <div class="slider-item">
+            <label>Tamanho <span class="valor" id="scaleVal">2.0</span></label>
+            <input type="range" id="scale" min="0.1" max="10" step="0.1" value="2">
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <h3>📍 POSIÇÃO</h3>
+          <div class="slider-item">
+            <label>Posição X (esquerda/direita) <span class="valor" id="posXVal">0.0</span></label>
+            <input type="range" id="posX" min="-3" max="3" step="0.1" value="0">
+          </div>
+          <div class="slider-item">
+            <label>Posição Y (cima/baixo) <span class="valor" id="posYVal">0.5</span></label>
+            <input type="range" id="posY" min="-2" max="3" step="0.1" value="0.5">
+          </div>
+          <div class="slider-item">
+            <label>Posição Z (frente/trás) <span class="valor" id="posZVal">0.0</span></label>
+            <input type="range" id="posZ" min="-3" max="3" step="0.1" value="0">
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <h3>🔄 ROTAÇÃO</h3>
+          <div class="slider-item">
+            <label>Rotação X (deitar/levantar) <span class="valor" id="rotXVal">-90</span></label>
+            <input type="range" id="rotX" min="-180" max="180" step="5" value="-90">
+          </div>
+          <div class="slider-item">
+            <label>Rotação Y (girar) <span class="valor" id="rotYVal">0</span></label>
+            <input type="range" id="rotY" min="-180" max="180" step="5" value="0">
+          </div>
+          <div class="slider-item">
+            <label>Rotação Z (inclinar) <span class="valor" id="rotZVal">0</span></label>
+            <input type="range" id="rotZ" min="-180" max="180" step="5" value="0">
+          </div>
+        </div>
+        
+        <!-- Código gerado -->
+        <div class="code-box" id="codigoGerado">
+          scale="2 2 2"<br>
+          position="0 0.5 0"<br>
+          rotation="-90 0 0"
+        </div>
+        
+        <div class="button-group">
+          <button class="secondary" id="resetBtn">↺ Reset</button>
+          <button class="secondary" id="defaultBtn">⟲ Padrão</button>
+        </div>
+      </div>
     </div>
-
-    <!-- Upload Target .mind -->
-    <div class="upload-area" id="targetArea" onclick="document.getElementById('targetFile').click()">
-      <div class="upload-icon">🎯</div>
-      <div class="upload-title">Target (.mind)</div>
-      <div class="upload-subtitle">Clique para fazer upload do arquivo .mind</div>
-      <input type="file" id="targetFile" accept=".mind" style="display: none;">
-      <div class="file-info" id="targetInfo">Nenhum arquivo selecionado</div>
-    </div>
-
-    <!-- Upload Modelo 3D -->
-    <div class="upload-area" id="modeloArea" onclick="document.getElementById('modeloFile').click()">
-      <div class="upload-icon">📦</div>
-      <div class="upload-title">Modelo 3D (.glb)</div>
-      <div class="upload-subtitle">Clique para fazer upload do modelo 3D</div>
-      <input type="file" id="modeloFile" accept=".glb,.gltf" style="display: none;">
-      <div class="file-info" id="modeloInfo">Nenhum arquivo selecionado</div>
-    </div>
-
-    <!-- Upload Áudio -->
-    <div class="upload-area" id="audioArea" onclick="document.getElementById('audioFile').click()">
-      <div class="upload-icon">🎵</div>
-      <div class="upload-title">Áudio (.mp3)</div>
-      <div class="upload-subtitle">Clique para fazer upload do áudio</div>
-      <input type="file" id="audioFile" accept=".mp3,.wav,.ogg" style="display: none;">
-      <div class="file-info" id="audioInfo">Nenhum arquivo selecionado</div>
-    </div>
-
-    <!-- Botões -->
-    <button class="btn" id="createBtn" onclick="criarProjeto()">🚀 Criar Projeto AR</button>
-    <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Voltar</button>
-
-    <!-- Progresso -->
-    <div class="progress" id="progress">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div class="status" id="status"></div>
-
-    <!-- Preview do Projeto Criado -->
+    
+    <!-- Botão principal -->
+    <button class="btn-primary" id="createBtn">🚀 CRIAR PROJETO AR</button>
+    <button class="btn-primary" style="background: #6c757d; margin-top: 10px;" onclick="window.location.href='index.html'">← Voltar</button>
+    
+    <!-- Preview do projeto criado -->
     <div class="preview" id="preview">
-      <h2 style="color: #28a745; text-align: center; margin-bottom: 20px;">✅ Projeto Criado com Sucesso!</h2>
+      <h2 style="color: #28a745; text-align: center;">✅ PROJETO CRIADO COM SUCESSO!</h2>
       
       <div class="qr-code" id="qrPreview"></div>
-      
       <div class="project-url" id="projectUrl"></div>
       
-      <div class="warning">
-        ⚠️ Guarde este link! Ele é único para seu projeto e você pode compartilhar com seus clientes.
+      <div class="button-group">
+        <button id="copyLinkBtn">📋 Copiar Link</button>
+        <button id="openArBtn" class="secondary">👁️ Abrir AR</button>
       </div>
-      
-      <div class="action-buttons">
-        <button class="btn btn-secondary" onclick="copiarLink()">📋 Copiar Link</button>
-        <button class="btn btn-success" onclick="window.open(document.getElementById('projectUrl').textContent, '_blank')">👁️ Abrir AR</button>
-      </div>
-      
-      <button class="btn btn-secondary" style="margin-top: 10px;" onclick="window.location.href='index.html'">🏠 Ir para Página Inicial</button>
     </div>
   </div>
 
   <script>
+    // ============================================
+    // VARIÁVEIS
+    // ============================================
     let projectData = {
       target: null,
       modelo: null,
       audio: null
     };
-
-    // Preview dos arquivos
+    
+    // Elementos do preview 3D
+    const modeloPreview = document.getElementById('modelo-preview');
+    
+    // Sliders
+    const scaleSlider = document.getElementById('scale');
+    const posXSlider = document.getElementById('posX');
+    const posYSlider = document.getElementById('posY');
+    const posZSlider = document.getElementById('posZ');
+    const rotXSlider = document.getElementById('rotX');
+    const rotYSlider = document.getElementById('rotY');
+    const rotZSlider = document.getElementById('rotZ');
+    
+    // ============================================
+    // FUNÇÕES DO PREVIEW 3D
+    // ============================================
+    function atualizarPreview() {
+      const scale = scaleSlider.value;
+      const posX = posXSlider.value;
+      const posY = posYSlider.value;
+      const posZ = posZSlider.value;
+      const rotX = rotXSlider.value;
+      const rotY = rotYSlider.value;
+      const rotZ = rotZSlider.value;
+      
+      // Atualizar valores na tela
+      document.getElementById('scaleVal').textContent = scale;
+      document.getElementById('posXVal').textContent = posX;
+      document.getElementById('posYVal').textContent = posY;
+      document.getElementById('posZVal').textContent = posZ;
+      document.getElementById('rotXVal').textContent = rotX;
+      document.getElementById('rotYVal').textContent = rotY;
+      document.getElementById('rotZVal').textContent = rotZ;
+      
+      // Atualizar modelo 3D
+      if (modeloPreview) {
+        modeloPreview.setAttribute('scale', `${scale} ${scale} ${scale}`);
+        modeloPreview.setAttribute('position', `${posX} ${posY} ${posZ}`);
+        modeloPreview.setAttribute('rotation', `${rotX} ${rotY} ${rotZ}`);
+      }
+      
+      // Atualizar código
+      document.getElementById('codigoGerado').innerHTML = `
+        scale="${scale} ${scale} ${scale}"<br>
+        position="${posX} ${posY} ${posZ}"<br>
+        rotation="${rotX} ${rotY} ${rotZ}"
+      `;
+    }
+    
+    // Event listeners dos sliders
+    scaleSlider.addEventListener('input', atualizarPreview);
+    posXSlider.addEventListener('input', atualizarPreview);
+    posYSlider.addEventListener('input', atualizarPreview);
+    posZSlider.addEventListener('input', atualizarPreview);
+    rotXSlider.addEventListener('input', atualizarPreview);
+    rotYSlider.addEventListener('input', atualizarPreview);
+    rotZSlider.addEventListener('input', atualizarPreview);
+    
+    // Botão reset
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      scaleSlider.value = 2;
+      posXSlider.value = 0;
+      posYSlider.value = 0.5;
+      posZSlider.value = 0;
+      rotXSlider.value = -90;
+      rotYSlider.value = 0;
+      rotZSlider.value = 0;
+      atualizarPreview();
+    });
+    
+    // Botão padrão
+    document.getElementById('defaultBtn').addEventListener('click', () => {
+      scaleSlider.value = 5;
+      posXSlider.value = 0;
+      posYSlider.value = 0;
+      posZSlider.value = 0;
+      rotXSlider.value = 0;
+      rotYSlider.value = 0;
+      rotZSlider.value = 0;
+      atualizarPreview();
+    });
+    
+    // ============================================
+    // FUNÇÕES DE UPLOAD
+    // ============================================
     document.getElementById('targetFile').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
         projectData.target = file;
-        document.getElementById('targetInfo').innerHTML = `✅ ${file.name} (${(file.size/1024).toFixed(2)} KB)`;
+        document.getElementById('targetInfo').innerHTML = `✅ ${file.name}`;
         document.getElementById('targetArea').classList.add('has-file');
       }
     });
-
+    
     document.getElementById('modeloFile').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
         projectData.modelo = file;
-        document.getElementById('modeloInfo').innerHTML = `✅ ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
+        document.getElementById('modeloInfo').innerHTML = `✅ ${file.name}`;
         document.getElementById('modeloArea').classList.add('has-file');
+        
+        // Atualizar preview com o novo modelo (se for local, usa o do assets por enquanto)
+        // Em produção, aqui faria upload para o servidor
       }
     });
-
+    
     document.getElementById('audioFile').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
         projectData.audio = file;
-        document.getElementById('audioInfo').innerHTML = `✅ ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
+        document.getElementById('audioInfo').innerHTML = `✅ ${file.name}`;
         document.getElementById('audioArea').classList.add('has-file');
       }
     });
-
-    // Função para criar projeto
-    function criarProjeto() {
+    
+    // ============================================
+    // FUNÇÃO PARA CRIAR PROJETO
+    // ============================================
+    document.getElementById('createBtn').addEventListener('click', function() {
       // Verificar se todos os arquivos foram selecionados
       if (!projectData.target || !projectData.modelo || !projectData.audio) {
-        alert('❌ Por favor, selecione todos os arquivos necessários!');
+        alert('❌ Selecione todos os arquivos!');
         return;
       }
-
+      
       const projectName = document.getElementById('projectName').value || 'Projeto AR';
       
-      // Mostrar progresso
-      document.getElementById('progress').classList.add('show');
-      document.getElementById('status').innerHTML = '⏳ Processando arquivos...';
-      document.getElementById('createBtn').disabled = true;
-
-      // Simular progresso
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        document.getElementById('progressBar').style.width = progress + '%';
-        
-        if (progress >= 100) {
-          clearInterval(interval);
-          document.getElementById('status').innerHTML = '✅ Salvando projeto...';
-          setTimeout(() => {
-            finalizarCriacao(projectName);
-          }, 500);
-        }
-      }, 200);
-    }
-
-    // Finalizar criação do projeto
+      // Mostrar loading
+      document.getElementById('loading').classList.add('show');
+      document.getElementById('loadingMessage').textContent = 'Criando projeto...';
+      
+      // Simular processamento
+      setTimeout(() => {
+        finalizarCriacao(projectName);
+      }, 2000);
+    });
+    
     function finalizarCriacao(projectName) {
-      // Gerar ID único para o projeto
+      // Gerar ID único
       const projectId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+      
+      // Pegar valores dos sliders
+      const config = {
+        scale: scaleSlider.value,
+        position: {
+          x: posXSlider.value,
+          y: posYSlider.value,
+          z: posZSlider.value
+        },
+        rotation: {
+          x: rotXSlider.value,
+          y: rotYSlider.value,
+          z: rotZSlider.value
+        }
+      };
       
       // Criar objeto do projeto
       const projeto = {
         id: projectId,
         nome: projectName,
         data: new Date().toISOString(),
-        target: {
-          nome: projectData.target.name,
-          tamanho: projectData.target.size
+        arquivos: {
+          target: projectData.target.name,
+          modelo: projectData.modelo.name,
+          audio: projectData.audio.name
         },
-        modelo: {
-          nome: projectData.modelo.name,
-          tamanho: projectData.modelo.size
-        },
-        audio: {
-          nome: projectData.audio.name,
-          tamanho: projectData.audio.size
-        }
+        config: config
       };
-
+      
       // Salvar no localStorage
       const projetos = JSON.parse(localStorage.getItem('ar_projetos') || '[]');
       projetos.push(projeto);
       localStorage.setItem('ar_projetos', JSON.stringify(projetos));
-
-      // Salvar arquivos (simulado - em produção seria num servidor)
-      salvarArquivosSimulados(projectId);
-
-      // Gerar URL do projeto
+      
+      // Gerar URL
       const baseUrl = window.location.origin + window.location.pathname.replace('criar.html', '');
       const projectUrl = `${baseUrl}ver.html?id=${projectId}`;
       
-      // Mostrar preview
-      document.getElementById('status').innerHTML = '✅ Projeto criado com sucesso!';
-      document.getElementById('progress').classList.remove('show');
-      
       // Gerar QR Code
       const qrUrl = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(projectUrl)}&choe=UTF-8`;
-      document.getElementById('qrPreview').innerHTML = `<img src="${qrUrl}" style="max-width: 200px; border: 1px solid #ddd; padding: 10px; background: white;">`;
       
+      // Mostrar preview
+      document.getElementById('qrPreview').innerHTML = `<img src="${qrUrl}" style="max-width: 200px;">`;
       document.getElementById('projectUrl').innerHTML = projectUrl;
       document.getElementById('preview').classList.add('show');
       
-      // Reset form
-      document.getElementById('createBtn').disabled = false;
+      // Esconder loading
+      document.getElementById('loading').classList.remove('show');
       
       // Limpar seleções
       limparSelecoes();
-
-      // Rolagem suave até o preview
-      document.getElementById('preview').scrollIntoView({ behavior: 'smooth' });
     }
-
-    // Salvar arquivos simulados (armazenar nomes)
-    function salvarArquivosSimulados(projectId) {
-      const filesRef = {
-        target: {
-          nome: projectData.target.name,
-          tipo: 'mind'
-        },
-        modelo: {
-          nome: projectData.modelo.name,
-          tipo: 'glb'
-        },
-        audio: {
-          nome: projectData.audio.name,
-          tipo: 'mp3'
-        }
-      };
-      
-      localStorage.setItem(`projeto_${projectId}_files`, JSON.stringify(filesRef));
-    }
-
-    // Limpar seleções
+    
     function limparSelecoes() {
       projectData = { target: null, modelo: null, audio: null };
-      
       document.getElementById('targetFile').value = '';
       document.getElementById('modeloFile').value = '';
       document.getElementById('audioFile').value = '';
-      
       document.getElementById('targetInfo').innerHTML = 'Nenhum arquivo selecionado';
       document.getElementById('modeloInfo').innerHTML = 'Nenhum arquivo selecionado';
       document.getElementById('audioInfo').innerHTML = 'Nenhum arquivo selecionado';
-      
       document.getElementById('targetArea').classList.remove('has-file');
       document.getElementById('modeloArea').classList.remove('has-file');
       document.getElementById('audioArea').classList.remove('has-file');
     }
-
-    // Copiar link
-    function copiarLink() {
+    
+    // ============================================
+    // BOTÕES DO PREVIEW
+    // ============================================
+    document.getElementById('copyLinkBtn').addEventListener('click', function() {
       const url = document.getElementById('projectUrl').textContent;
       navigator.clipboard.writeText(url).then(() => {
-        alert('✅ Link copiado para a área de transferência!');
-      }).catch(() => {
-        alert('❌ Erro ao copiar. Selecione o link manualmente.');
-      });
-    }
-
-    // Drag and drop
-    ['targetArea', 'modeloArea', 'audioArea'].forEach(areaId => {
-      const area = document.getElementById(areaId);
-      
-      area.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        area.style.borderColor = '#667eea';
-        area.style.background = '#f8f9ff';
-      });
-
-      area.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        area.style.borderColor = '#ddd';
-        area.style.background = 'white';
-      });
-
-      area.addEventListener('drop', (e) => {
-        e.preventDefault();
-        area.style.borderColor = '#ddd';
-        area.style.background = 'white';
-        
-        const file = e.dataTransfer.files[0];
-        if (file) {
-          const input = document.getElementById(areaId === 'targetArea' ? 'targetFile' : 
-                                               areaId === 'modeloArea' ? 'modeloFile' : 'audioFile');
-          
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(file);
-          input.files = dataTransfer.files;
-          
-          const event = new Event('change', { bubbles: true });
-          input.dispatchEvent(event);
-        }
+        alert('✅ Link copiado!');
       });
     });
-
-    // Prevenir envio do formulário ao pressionar Enter
-    document.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-      }
+    
+    document.getElementById('openArBtn').addEventListener('click', function() {
+      const url = document.getElementById('projectUrl').textContent;
+      window.open(url, '_blank');
     });
+    
+    // Inicializar preview
+    atualizarPreview();
   </script>
 </body>
 </html>
