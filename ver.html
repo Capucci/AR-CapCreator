@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR CapCreator - Visualizador</title>
+  
+  <!-- A-Frame e Mind AR -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Loading */
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      color: white;
+      flex-direction: column;
+      transition: opacity 0.5s;
+    }
+    .loading.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .spinner {
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Botão de áudio */
+    .audio-control-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      z-index: 9999;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      transition: all 0.3s;
+    }
+    .audio-control-btn.playing { 
+      background-color: rgba(40, 167, 69, 0.9);
+    }
+    .audio-control-btn.paused { 
+      background-color: rgba(220, 53, 69, 0.9);
+    }
+    .audio-control-btn:hover {
+      transform: scale(1.1);
+    }
+    
+    /* Botão VR */
+    .a-enter-vr {
+      position: fixed;
+      bottom: 20px !important;
+      right: 20px !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+    }
+    
+    /* Mensagem de instrução */
+    .instruction {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 50px;
+      z-index: 9999;
+      font-size: 14px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255,255,255,0.2);
+      pointer-events: none;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+    
+    /* Mensagem de erro */
+    .error-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      z-index: 10001;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 90%;
+    }
+    .error-message h3 {
+      color: #dc3545;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+    .error-message p {
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .error-message button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 30px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    /* Aviso de demonstração */
+    .demo-warning {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffc107;
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 50px;
+      z-index: 9999;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div id="loadingMessage">Carregando experiência AR...</div>
+  </div>
+
+  <!-- Instrução -->
+  <div class="instruction" id="instruction">
+    🎯 Aponte a câmera para o target
+  </div>
+
+  <!-- Cena A-Frame -->
+  <a-scene
+    id="scene"
+    mindar-image="imageTargetSrc: {{TARGET_PATH}}; autoStart: true;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    embedded
+    arjs>
+    
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity
+        id="modelo3d"
+        gltf-model="{{MODELO_PATH}}"
+        animation-mixer
+        position="0 0 0"
+        rotation="90 0 0"
+        scale="9 9 9">
+      </a-entity>
+    </a-entity>
+    
+    <audio id="audioAR" preload="auto" style="display: none;">
+      <source src="{{AUDIO_PATH}}" type="audio/mpeg">
+    </audio>
+  </a-scene>
+
+  <script>
+    // ============================================
+    // CONFIGURAÇÃO
+    // ============================================
+    
+    // URLs de exemplo para fallback
+    const EXEMPLOS = {
+      target: 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/examples/assets/targets/boo.mind',
+      modelo: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf',
+      audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    };
+
+    // ============================================
+    // FUNÇÕES AUXILIARES
+    // ============================================
+    
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        id: params.get('id'),
+        demo: params.get('demo')
+      };
+    }
+
+    function showError(message) {
+      const loading = document.getElementById('loading');
+      loading.style.display = 'none';
+      
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.innerHTML = `
+        <h3>❌ Erro</h3>
+        <p>${message}</p>
+        <button onclick="window.location.href='index.html'">Voltar ao Início</button>
+      `;
+      document.body.appendChild(errorDiv);
+    }
+
+    function showDemoWarning() {
+      const warning = document.createElement('div');
+      warning.className = 'demo-warning';
+      warning.innerHTML = '🎮 Modo demonstração - Usando modelos de exemplo';
+      document.body.appendChild(warning);
+      
+      setTimeout(() => {
+        warning.style.opacity = '0';
+        setTimeout(() => warning.remove(), 1000);
+      }, 5000);
+    }
+
+    // ============================================
+    // CARREGAR PROJETO
+    // ============================================
+    
+    const params = getUrlParams();
+    let projectConfig = null;
+
+    function loadProject() {
+      const loadingMessage = document.getElementById('loadingMessage');
+      
+      // CASO 1: Modo demonstração
+      if (params.demo) {
+        console.log('🎮 Modo demonstração');
+        projectConfig = {
+          targetPath: EXEMPLOS.target,
+          modelPath: EXEMPLOS.modelo,
+          audioPath: EXEMPLOS.audio,
+          nome: 'Demonstração'
+        };
+        loadingMessage.innerHTML = 'Carregando demonstração...';
+        showDemoWarning();
+        updateScene();
+        return;
+      }
+      
+      // CASO 2: Projeto específico
+      if (params.id) {
+        console.log('🔍 Carregando projeto:', params.id);
+        loadingMessage.innerHTML = 'Carregando seu projeto...';
+        
+        const projetos = JSON.parse(localStorage.getItem('ar_projetos') || '[]');
+        const projeto = projetos.find(p => p.id === params.id);
+        
+        if (projeto) {
+          // Projeto encontrado - usar URLs de exemplo por enquanto
+          // (em produção, aqui buscaria os arquivos reais)
+          projectConfig = {
+            targetPath: EXEMPLOS.target,
+            modelPath: EXEMPLOS.modelo,
+            audioPath: EXEMPLOS.audio,
+            nome: projeto.nome || 'Meu Projeto'
+          };
+          
+          document.title = `AR - ${projectConfig.nome}`;
+          updateScene();
+        } else {
+          // Projeto não encontrado
+          console.log('❌ Projeto não encontrado');
+          showError('Projeto não encontrado!');
+        }
+        return;
+      }
+      
+      // CASO 3: Sem parâmetros - redirecionar para demo
+      console.log('🔄 Sem parâmetros, redirecionando para demo');
+      window.location.href = window.location.pathname + '?demo=true';
+    }
+
+    // ============================================
+    // ATUALIZAR CENA
+    // ============================================
+    
+    function updateScene() {
+      const scene = document.getElementById('scene');
+      const modelo = document.getElementById('modelo3d');
+      const audio = document.getElementById('audioAR');
+      
+      if (!scene || !modelo || !audio) {
+        console.error('Elementos da cena não encontrados');
+        setTimeout(updateScene, 500);
+        return;
+      }
+      
+      try {
+        // Configurar Mind AR
+        scene.setAttribute('mindar-image', `imageTargetSrc: ${projectConfig.targetPath}; autoStart: true;`);
+        
+        // Configurar modelo
+        modelo.setAttribute('gltf-model', projectConfig.modelPath);
+        
+        // Configurar áudio
+        const source = audio.querySelector('source');
+        if (source) {
+          source.src = projectConfig.audioPath;
+          audio.load();
+        }
+        
+        console.log('✅ Cena atualizada:', projectConfig);
+        
+        // Esconder loading após um tempo
+        setTimeout(() => {
+          document.getElementById('loading').classList.add('fade-out');
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Erro ao atualizar cena:', error);
+        showError('Erro ao carregar a experiência AR');
+      }
+    }
+
+    // ============================================
+    // CONTROLES DE ÁUDIO
+    // ============================================
+    
+    function setupAudioControls() {
+      const target = document.querySelector('[mindar-image-target]');
+      const audioElement = document.getElementById('audioAR');
+      
+      if (!target || !audioElement) {
+        setTimeout(setupAudioControls, 1000);
+        return;
+      }
+      
+      let audioUnlocked = false;
+      let audioPausedTime = 0;
+      let isAudioPlaying = false;
+      let firstTargetFound = false;
+      
+      // Criar botão de controle
+      const audioBtn = document.createElement('button');
+      audioBtn.id = 'audioControlBtn';
+      audioBtn.className = 'audio-control-btn paused';
+      audioBtn.innerHTML = '🔇';
+      document.body.appendChild(audioBtn);
+
+      function updateButtonIcon() {
+        audioBtn.innerHTML = isAudioPlaying ? '🔊' : '🔇';
+        audioBtn.classList.toggle('playing', isAudioPlaying);
+        audioBtn.classList.toggle('paused', !isAudioPlaying);
+      }
+
+      function tryPlayAudio() {
+        if (!audioUnlocked) {
+          audioElement.play()
+            .then(() => {
+              audioUnlocked = true;
+              isAudioPlaying = true;
+              updateButtonIcon();
+              console.log('🎵 Áudio iniciado');
+            })
+            .catch(error => {
+              console.log('⏳ Aguardando interação para áudio');
+            });
+        } else if (!isAudioPlaying) {
+          if (audioPausedTime > 0) {
+            audioElement.currentTime = audioPausedTime;
+          }
+          audioElement.play()
+            .then(() => {
+              isAudioPlaying = true;
+              updateButtonIcon();
+            })
+            .catch(error => console.error('Erro ao tocar áudio:', error));
+        }
+      }
+
+      // Eventos do target
+      target.addEventListener("targetFound", () => {
+        console.log('🎯 Target encontrado!');
+        firstTargetFound = true;
+        tryPlayAudio();
+      });
+
+      target.addEventListener("targetLost", () => {
+        console.log('👋 Target perdido');
+        if (isAudioPlaying) {
+          audioPausedTime = audioElement.currentTime;
+          audioElement.pause();
+          isAudioPlaying = false;
+          updateButtonIcon();
+        }
+      });
+
+      // Botão de controle manual
+      audioBtn.addEventListener('click', () => {
+        if (isAudioPlaying) {
+          audioPausedTime = audioElement.currentTime;
+          audioElement.pause();
+          isAudioPlaying = false;
+        } else {
+          if (audioPausedTime > 0) {
+            audioElement.currentTime = audioPausedTime;
+          }
+          audioElement.play()
+            .then(() => {
+              isAudioPlaying = true;
+              audioUnlocked = true;
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+        updateButtonIcon();
+      });
+
+      // Interações para desbloquear áudio
+      document.body.addEventListener('click', () => {
+        if (firstTargetFound && !audioUnlocked) {
+          tryPlayAudio();
+        }
+      });
+      
+      document.body.addEventListener('touchstart', () => {
+        if (firstTargetFound && !audioUnlocked) {
+          tryPlayAudio();
+        }
+      });
+
+      // Quando o áudio terminar
+      audioElement.addEventListener('ended', () => {
+        console.log('🎵 Áudio terminou');
+        isAudioPlaying = false;
+        audioPausedTime = 0;
+        updateButtonIcon();
+      });
+
+      // Monitorar tempo
+      setInterval(() => {
+        if (isAudioPlaying) {
+          audioPausedTime = audioElement.currentTime;
+        }
+      }, 1000);
+
+      audioElement.load();
+    }
+
+    // ============================================
+    // INICIALIZAÇÃO
+    // ============================================
+    
+    // Carregar projeto quando a página estiver pronta
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProject();
+      setupAudioControls();
+    });
+
+    // Fallback para erro na cena
+    window.addEventListener('error', (e) => {
+      console.error('Erro global:', e);
+      if (!projectConfig) {
+        projectConfig = {
+          targetPath: EXEMPLOS.target,
+          modelPath: EXEMPLOS.modelo,
+          audioPath: EXEMPLOS.audio,
+          nome: 'Recuperação'
+        };
+        updateScene();
+      }
+    });
+
+    // Remover loading se demorar muito
+    setTimeout(() => {
+      const loading = document.getElementById('loading');
+      if (loading && !loading.classList.contains('fade-out')) {
+        loading.classList.add('fade-out');
+      }
+    }, 5000);
+  </script>
+</body>
+</html>
