@@ -3,125 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR CapCreator - Visualizador</title>
+  <title>AR CapCreator</title>
   
-  <!-- A-Frame e Mind AR -->
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+  <!-- Scripts -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      margin: 0; 
-      overflow: hidden; 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
+    body { margin: 0; overflow: hidden; }
     .loading {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      color: white;
-      flex-direction: column;
-      transition: opacity 0.5s;
-    }
-    .loading.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-    .spinner {
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top: 4px solid white;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .audio-control-btn {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      z-index: 9999;
-      cursor: pointer;
-      border: 2px solid white;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-      font-size: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: rgba(0, 0, 0, 0.7);
-      transition: all 0.3s;
-    }
-    .audio-control-btn.playing { 
-      background-color: rgba(40, 167, 69, 0.9);
-    }
-    .audio-control-btn.paused { 
-      background-color: rgba(220, 53, 69, 0.9);
-    }
-    
-    .a-enter-vr {
-      position: fixed;
-      bottom: 20px !important;
-      right: 20px !important;
-      left: auto !important;
-    }
-    
-    .instruction {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      padding: 20px;
       background: rgba(0,0,0,0.7);
       color: white;
-      padding: 10px 20px;
-      border-radius: 50px;
-      z-index: 9999;
-      font-size: 14px;
-      backdrop-filter: blur(5px);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 0.7; }
-      50% { opacity: 1; }
-      100% { opacity: 0.7; }
+      text-align: center;
+      z-index: 1000;
+      font-family: Arial;
     }
   </style>
 </head>
 <body>
-  <!-- Loading -->
-  <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <div id="loadingMessage">Carregando experiência AR...</div>
-  </div>
+  <div class="loading" id="loading">Inicializando câmera...</div>
 
-  <!-- Instrução -->
-  <div class="instruction" id="instruction">
-    🎯 Aponte a câmera para o target
-  </div>
-
-  <!-- Cena A-Frame -->
-  <a-scene
-    id="scene"
-    mindar-image="imageTargetSrc: https://capucci.github.io/AR-CapCreator/assets/target.mind; autoStart: true;"
+  <a-scene 
+    mindar-image="imageTargetSrc: https://capucci.github.io/AR-CapCreator/assets/target.mind; autoStart: true;" 
     vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
     embedded
     arjs>
     
@@ -129,160 +38,30 @@
     
     <a-entity mindar-image-target="targetIndex: 0">
       <a-entity
-        id="modelo3d"
         gltf-model="https://capucci.github.io/AR-CapCreator/assets/modelo.glb"
-        animation-mixer
+        scale="5 5 5"
         position="0 0 0"
-        rotation="90 0 0"
-        scale="9 9 9">
+        rotation="0 0 0">
       </a-entity>
     </a-entity>
-    
-    <audio id="audioAR" preload="auto" style="display: none;" loop>
-      <source src="https://capucci.github.io/AR-CapCreator/assets/audio.mp3" type="audio/mpeg">
-    </audio>
   </a-scene>
 
   <script>
-    // ============================================
-    // CONTROLES DE ÁUDIO
-    // ============================================
+    // Mostrar status
+    const loading = document.getElementById('loading');
     
-    document.addEventListener("DOMContentLoaded", function() {
-      const scene = document.querySelector('a-scene');
-      const target = document.querySelector('[mindar-image-target]');
-      const audioElement = document.getElementById('audioAR');
-      
-      let audioUnlocked = false;
-      let audioPausedTime = 0;
-      let isAudioPlaying = false;
-      let firstTargetFound = false;
-      
-      // Criar botão de controle
-      const audioBtn = document.createElement('button');
-      audioBtn.id = 'audioControlBtn';
-      audioBtn.className = 'audio-control-btn paused';
-      audioBtn.innerHTML = '🔇';
-      document.body.appendChild(audioBtn);
-
-      function updateButtonIcon() {
-        audioBtn.innerHTML = isAudioPlaying ? '🔊' : '🔇';
-        audioBtn.classList.toggle('playing', isAudioPlaying);
-        audioBtn.classList.toggle('paused', !isAudioPlaying);
-      }
-
-      function tryPlayAudio() {
-        if (!audioUnlocked) {
-          audioElement.play()
-            .then(() => {
-              audioUnlocked = true;
-              isAudioPlaying = true;
-              updateButtonIcon();
-              console.log('🎵 Áudio iniciado');
-            })
-            .catch(error => {
-              console.log('⏳ Aguardando interação para áudio');
-            });
-        } else if (!isAudioPlaying) {
-          if (audioPausedTime > 0) {
-            audioElement.currentTime = audioPausedTime;
-          }
-          audioElement.play()
-            .then(() => {
-              isAudioPlaying = true;
-              updateButtonIcon();
-            })
-            .catch(error => console.error('Erro ao tocar áudio:', error));
-        }
-      }
-
-      // Eventos do target
-      if (target) {
-        target.addEventListener("targetFound", () => {
-          console.log('🎯 Target encontrado!');
-          firstTargetFound = true;
-          tryPlayAudio();
-          
-          // Esconder loading quando encontrar o target
-          document.getElementById('loading').classList.add('fade-out');
-        });
-
-        target.addEventListener("targetLost", () => {
-          console.log('👋 Target perdido');
-          if (isAudioPlaying) {
-            audioPausedTime = audioElement.currentTime;
-            audioElement.pause();
-            isAudioPlaying = false;
-            updateButtonIcon();
-          }
-        });
-      }
-
-      // Botão de controle manual
-      if (audioBtn) {
-        audioBtn.addEventListener('click', () => {
-          if (isAudioPlaying) {
-            audioPausedTime = audioElement.currentTime;
-            audioElement.pause();
-            isAudioPlaying = false;
-          } else {
-            if (audioPausedTime > 0) {
-              audioElement.currentTime = audioPausedTime;
-            }
-            audioElement.play()
-              .then(() => {
-                isAudioPlaying = true;
-                audioUnlocked = true;
-              })
-              .catch(error => console.error('Erro:', error));
-          }
-          updateButtonIcon();
-        });
-      }
-
-      // Interações para desbloquear áudio
-      document.body.addEventListener('click', () => {
-        if (firstTargetFound && !audioUnlocked) {
-          tryPlayAudio();
-        }
-      });
-      
-      document.body.addEventListener('touchstart', () => {
-        if (firstTargetFound && !audioUnlocked) {
-          tryPlayAudio();
-        }
-      });
-
-      // Quando o áudio terminar (reinicia)
-      if (audioElement) {
-        audioElement.addEventListener('ended', () => {
-          console.log('🎵 Áudio terminou, reiniciando');
-          audioElement.currentTime = 0;
-          if (isAudioPlaying) {
-            audioElement.play();
-          }
-        });
-
-        audioElement.load();
-      }
-
-      // Remover loading após 5 segundos mesmo sem encontrar target
-      setTimeout(() => {
-        const loading = document.getElementById('loading');
-        if (loading && !loading.classList.contains('fade-out')) {
-          loading.classList.add('fade-out');
-        }
-      }, 5000);
+    document.querySelector('a-scene').addEventListener('loaded', function() {
+      loading.innerHTML = '✅ Pronto! Aponte para o target';
+      setTimeout(() => loading.style.opacity = '0', 3000);
     });
 
-    // ============================================
-    // AJUSTES DA CENA
-    // ============================================
-    
-    // Ajustar escala do modelo quando carregar
-    document.querySelector('a-scene').addEventListener('loaded', function () {
-      console.log('✅ Cena carregada');
-    });
+    // Se demorar muito, mostrar erro
+    setTimeout(() => {
+      if (loading.innerHTML === 'Inicializando câmera...') {
+        loading.innerHTML = '❌ Clique na tela para permitir câmera';
+        loading.style.background = 'rgba(255,0,0,0.7)';
+      }
+    }, 5000);
   </script>
 </body>
 </html>
