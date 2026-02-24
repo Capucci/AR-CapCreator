@@ -5,28 +5,96 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR CapCreator</title>
   
-  <!-- Scripts -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   
   <style>
-    body { margin: 0; overflow: hidden; }
-    .loading {
-      position: fixed;
-      top: 0;
-      left: 0;
+    /* RESET COMPLETO */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
       width: 100%;
-      padding: 20px;
+      height: 100%;
+      overflow: hidden;
+      background: black !important;
+    }
+    
+    /* FORÇAR A CÂMERA */
+    .a-scene,
+    .a-canvas,
+    .a-videocapture,
+    video,
+    canvas {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      z-index: 1 !important;
+    }
+    
+    /* CANVAS DO AR POR CIMA */
+    .a-canvas {
+      z-index: 2 !important;
+    }
+    
+    /* REMOVER FUNDOS BRANCOS */
+    .a-scene {
+      background: transparent !important;
+    }
+    
+    /* BOTÃO DE ÁUDIO */
+    .audio-control-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      z-index: 9999;
+      cursor: pointer;
+      border: 2px solid white;
       background: rgba(0,0,0,0.7);
       color: white;
-      text-align: center;
-      z-index: 1000;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* BOTÃO VR */
+    .a-enter-vr {
+      position: fixed !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      left: auto !important;
+      top: auto !important;
+      z-index: 9999 !important;
+    }
+    
+    /* LOADING */
+    .loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 50px;
+      z-index: 10000;
       font-family: Arial;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="loading" id="loading">Inicializando câmera...</div>
+  <div class="loading" id="loading">Inicializando...</div>
 
   <a-scene 
     mindar-image="imageTargetSrc: https://capucci.github.io/AR-CapCreator/assets/target.mind; autoStart: true;" 
@@ -47,21 +115,45 @@
   </a-scene>
 
   <script>
-    // Mostrar status
+    // Criar botão de áudio
+    const audioBtn = document.createElement('button');
+    audioBtn.className = 'audio-control-btn';
+    audioBtn.innerHTML = '🔇';
+    document.body.appendChild(audioBtn);
+    
+    // Áudio
+    const audio = new Audio('https://capucci.github.io/AR-CapCreator/assets/audio.mp3');
+    audio.loop = true;
+    let audioPlaying = false;
+    
+    audioBtn.onclick = () => {
+      if (audioPlaying) {
+        audio.pause();
+        audioBtn.innerHTML = '🔇';
+      } else {
+        audio.play();
+        audioBtn.innerHTML = '🔊';
+      }
+      audioPlaying = !audioPlaying;
+    };
+    
+    // Loading
     const loading = document.getElementById('loading');
     
-    document.querySelector('a-scene').addEventListener('loaded', function() {
-      loading.innerHTML = '✅ Pronto! Aponte para o target';
+    document.querySelector('a-scene').addEventListener('loaded', () => {
+      loading.innerHTML = '✅ Aponte para o target';
       setTimeout(() => loading.style.opacity = '0', 3000);
     });
-
-    // Se demorar muito, mostrar erro
-    setTimeout(() => {
-      if (loading.innerHTML === 'Inicializando câmera...') {
-        loading.innerHTML = '❌ Clique na tela para permitir câmera';
-        loading.style.background = 'rgba(255,0,0,0.7)';
-      }
-    }, 5000);
+    
+    // Detectar target
+    const target = document.querySelector('[mindar-image-target]');
+    if (target) {
+      target.addEventListener('targetFound', () => {
+        loading.innerHTML = '🎯 Target encontrado!';
+        loading.style.background = 'rgba(0,128,0,0.8)';
+        setTimeout(() => loading.style.opacity = '0', 2000);
+      });
+    }
   </script>
 </body>
 </html>
