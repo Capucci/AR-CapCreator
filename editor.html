@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor AR - Ajuste seu modelo</title>
+  
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: white;
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    
+    /* Painel de controle */
+    .painel {
+      width: 300px;
+      background: #16213e;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #0f3460;
+    }
+    
+    .painel h2 {
+      color: #0f3460;
+      margin-bottom: 20px;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .painel h3 {
+      color: #e94560;
+      margin: 20px 0 10px;
+      font-size: 16px;
+    }
+    
+    .control-group {
+      background: #0f3460;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .slider-item {
+      margin-bottom: 15px;
+    }
+    
+    .slider-item label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      color: #aaa;
+      font-size: 12px;
+    }
+    
+    .slider-item input[type=range] {
+      width: 100%;
+      margin: 5px 0;
+    }
+    
+    .valor {
+      color: #e94560;
+      font-weight: bold;
+    }
+    
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    
+    button {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    
+    button:hover {
+      background: #ff6b8b;
+      transform: translateY(-2px);
+    }
+    
+    button.secondary {
+      background: #0f3460;
+    }
+    
+    button.secondary:hover {
+      background: #1a4a8b;
+    }
+    
+    .preview-btn {
+      background: #4CAF50;
+      grid-column: span 2;
+    }
+    
+    /* Área de preview 3D */
+    .preview-area {
+      flex: 1;
+      position: relative;
+      background: #0a0a1a;
+    }
+    
+    #preview-scene {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Informações */
+    .info-box {
+      background: #0f3460;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    
+    .info-box label {
+      color: #aaa;
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .info-box code {
+      color: #e94560;
+    }
+    
+    /* Loading */
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+    
+    .loading.show {
+      display: flex;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #e94560;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Responsivo */
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+      .painel {
+        width: 100%;
+        height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid #0f3460;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="container">
+    <!-- Painel de Controle -->
+    <div class="painel">
+      <h2>🎮 EDITOR AR</h2>
+      
+      <div class="control-group">
+        <h3>📦 MODELO 3D</h3>
+        
+        <div class="slider-item">
+          <label>Escala <span class="valor" id="scaleVal">2.0</span></label>
+          <input type="range" id="scale" min="0.1" max="10" step="0.1" value="2">
+        </div>
+        
+        <h3>📍 POSIÇÃO</h3>
+        
+        <div class="slider-item">
+          <label>Posição X (esquerda/direita) <span class="valor" id="posXVal">0.0</span></label>
+          <input type="range" id="posX" min="-3" max="3" step="0.1" value="0">
+        </div>
+        
+        <div class="slider-item">
+          <label>Posição Y (cima/baixo) <span class="valor" id="posYVal">0.5</span></label>
+          <input type="range" id="posY" min="-2" max="3" step="0.1" value="0.5">
+        </div>
+        
+        <div class="slider-item">
+          <label>Posição Z (frente/trás) <span class="valor" id="posZVal">0.0</span></label>
+          <input type="range" id="posZ" min="-3" max="3" step="0.1" value="0">
+        </div>
+        
+        <h3>🔄 ROTAÇÃO</h3>
+        
+        <div class="slider-item">
+          <label>Rotação X (deitar/levantar) <span class="valor" id="rotXVal">-90</span></label>
+          <input type="range" id="rotX" min="-180" max="180" step="5" value="-90">
+        </div>
+        
+        <div class="slider-item">
+          <label>Rotação Y (girar) <span class="valor" id="rotYVal">0</span></label>
+          <input type="range" id="rotY" min="-180" max="180" step="5" value="0">
+        </div>
+        
+        <div class="slider-item">
+          <label>Rotação Z (inclinar) <span class="valor" id="rotZVal">0</span></label>
+          <input type="range" id="rotZ" min="-180" max="180" step="5" value="0">
+        </div>
+      </div>
+      
+      <div class="button-group">
+        <button id="resetBtn" class="secondary">↺ Reset</button>
+        <button id="defaultBtn" class="secondary">⟲ Padrão</button>
+        <button id="previewBtn" class="preview-btn">👁️ Aplicar Preview</button>
+      </div>
+      
+      <div class="info-box">
+        <label>Código gerado:</label>
+        <code id="codigoGerado">
+          scale="2 2 2"<br>
+          position="0 0.5 0"<br>
+          rotation="-90 0 0"
+        </code>
+      </div>
+      
+      <div class="button-group">
+        <button id="copyBtn">📋 Copiar Código</button>
+        <button id="saveBtn" class="secondary">💾 Salvar Projeto</button>
+      </div>
+      
+      <div style="margin-top: 20px; font-size: 12px; color: #666; text-align: center;">
+        Ajuste o modelo até ficar perfeito,<br>depois copie o código para o ver.html
+      </div>
+    </div>
+    
+    <!-- Área de Preview 3D -->
+    <div class="preview-area">
+      <a-scene id="preview-scene" embedded vr-mode-ui="enabled: false" background="color: #1a1a2e">
+        <a-camera position="0 1.6 4" look-controls="enabled: true" wasd-controls="enabled: false"></a-camera>
+        
+        <!-- Luzes -->
+        <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
+        <a-light type="directional" color="#ffffff" intensity="1" position="1 2 1"></a-light>
+        <a-light type="directional" color="#ffffff" intensity="0.5" position="-1 1 -1"></a-light>
+        
+        <!-- Grid para referência -->
+        <a-grid position="0 0 0" rotation="-90 0 0" width="10" height="10" color="#444"></a-grid>
+        
+        <!-- Modelo 3D -->
+        <a-entity
+          id="modelo-preview"
+          gltf-model="https://capucci.github.io/AR-CapCreator/assets/modelo.glb"
+          animation-mixer
+          scale="2 2 2"
+          position="0 0.5 0"
+          rotation="-90 0 0">
+        </a-entity>
+        
+        <!-- Eixos de referência -->
+        <a-entity position="0 0 0">
+          <a-entity line="start: 0 0 0; end: 1 0 0; color: red"></a-entity>
+          <a-entity line="start: 0 0 0; end: 0 1 0; color: green"></a-entity>
+          <a-entity line="start: 0 0 0; end: 0 0 1; color: blue"></a-entity>
+        </a-entity>
+      </a-scene>
+    </div>
+  </div>
+
+  <script>
+    // Elementos do modelo
+    const modelo = document.getElementById('modelo-preview');
+    
+    // Sliders
+    const scaleSlider = document.getElementById('scale');
+    const posXSlider = document.getElementById('posX');
+    const posYSlider = document.getElementById('posY');
+    const posZSlider = document.getElementById('posZ');
+    const rotXSlider = document.getElementById('rotX');
+    const rotYSlider = document.getElementById('rotY');
+    const rotZSlider = document.getElementById('rotZ');
+    
+    // Valores exibidos
+    const scaleVal = document.getElementById('scaleVal');
+    const posXVal = document.getElementById('posXVal');
+    const posYVal = document.getElementById('posYVal');
+    const posZVal = document.getElementById('posZVal');
+    const rotXVal = document.getElementById('rotXVal');
+    const rotYVal = document.getElementById('rotYVal');
+    const rotZVal = document.getElementById('rotZVal');
+    const codigoGerado = document.getElementById('codigoGerado');
+    
+    // Loading
+    const loading = document.getElementById('loading');
+    
+    // Aguardar modelo carregar
+    setTimeout(() => {
+      loading.classList.remove('show');
+    }, 2000);
+    
+    // Função para atualizar o modelo
+    function atualizarModelo() {
+      const scale = scaleSlider.value;
+      const posX = posXSlider.value;
+      const posY = posYSlider.value;
+      const posZ = posZSlider.value;
+      const rotX = rotXSlider.value;
+      const rotY = rotYSlider.value;
+      const rotZ = rotZSlider.value;
+      
+      // Atualizar valores na tela
+      scaleVal.textContent = scale;
+      posXVal.textContent = posX;
+      posYVal.textContent = posY;
+      posZVal.textContent = posZ;
+      rotXVal.textContent = rotX;
+      rotYVal.textContent = rotY;
+      rotZVal.textContent = rotZ;
+      
+      // Atualizar modelo
+      modelo.setAttribute('scale', `${scale} ${scale} ${scale}`);
+      modelo.setAttribute('position', `${posX} ${posY} ${posZ}`);
+      modelo.setAttribute('rotation', `${rotX} ${rotY} ${rotZ}`);
+      
+      // Atualizar código
+      codigoGerado.innerHTML = `
+        scale="${scale} ${scale} ${scale}"<br>
+        position="${posX} ${posY} ${posZ}"<br>
+        rotation="${rotX} ${rotY} ${rotZ}"
+      `;
+    }
+    
+    // Event listeners para todos os sliders
+    scaleSlider.addEventListener('input', atualizarModelo);
+    posXSlider.addEventListener('input', atualizarModelo);
+    posYSlider.addEventListener('input', atualizarModelo);
+    posZSlider.addEventListener('input', atualizarModelo);
+    rotXSlider.addEventListener('input', atualizarModelo);
+    rotYSlider.addEventListener('input', atualizarModelo);
+    rotZSlider.addEventListener('input', atualizarModelo);
+    
+    // Botão aplicar
+    document.getElementById('previewBtn').addEventListener('click', atualizarModelo);
+    
+    // Botão reset (volta para valores atuais)
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      scaleSlider.value = 2;
+      posXSlider.value = 0;
+      posYSlider.value = 0.5;
+      posZSlider.value = 0;
+      rotXSlider.value = -90;
+      rotYSlider.value = 0;
+      rotZSlider.value = 0;
+      atualizarModelo();
+    });
+    
+    // Botão padrão (valores recomendados)
+    document.getElementById('defaultBtn').addEventListener('click', () => {
+      scaleSlider.value = 5;
+      posXSlider.value = 0;
+      posYSlider.value = 0;
+      posZSlider.value = 0;
+      rotXSlider.value = 0;
+      rotYSlider.value = 0;
+      rotZSlider.value = 0;
+      atualizarModelo();
+    });
+    
+    // Botão copiar código
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const codigo = `scale="${scaleSlider.value} ${scaleSlider.value} ${scaleSlider.value}"
+position="${posXSlider.value} ${posYSlider.value} ${posZSlider.value}"
+rotation="${rotXSlider.value} ${rotYSlider.value} ${rotZSlider.value}"`;
+      
+      navigator.clipboard.writeText(codigo).then(() => {
+        alert('✅ Código copiado! Agora cole no ver.html');
+      });
+    });
+    
+    // Botão salvar (salva no localStorage para usar no projeto)
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const config = {
+        scale: scaleSlider.value,
+        position: {
+          x: posXSlider.value,
+          y: posYSlider.value,
+          z: posZSlider.value
+        },
+        rotation: {
+          x: rotXSlider.value,
+          y: rotYSlider.value,
+          z: rotZSlider.value
+        }
+      };
+      
+      localStorage.setItem('modelo_config', JSON.stringify(config));
+      alert('✅ Configuração salva! Use no criar.html');
+    });
+    
+    // Atualizar uma vez ao carregar
+    atualizarModelo();
+  </script>
+</body>
+</html>
